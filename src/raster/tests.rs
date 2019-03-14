@@ -196,6 +196,13 @@ fn test_create_copy() {
 fn test_geo_transform() {
     let driver = Driver::get("MEM").unwrap();
     let dataset = driver.create("", 20, 10, 1).unwrap();
+
+    // x-coordinate of the top-left corner pixel (x-offset)
+    // width of a pixel (x-resolution)
+    // row rotation (typically zero)
+    // y-coordinate of the top-left corner pixel
+    // column rotation (typically zero)
+    // height of a pixel (y-resolution, typically negative)
     let transform = [0., 1., 0., 0., 0., 1.];
     assert!(dataset.set_geo_transform(&transform).is_ok());
     assert_eq!(dataset.geo_transform().unwrap(), transform);
@@ -364,4 +371,29 @@ fn test_get_offset() {
     let rasterband = dataset.rasterband(1).unwrap();
     let offset = rasterband.offset();
     assert_eq!(offset, Some(0.0));
+}
+
+#[test]
+fn test_reproject() {
+    let driver = Driver::get("MEM").unwrap();
+    let size_x = 100;
+    let size_y = 50;
+    let bands = 3;
+    let filename = ""; // Don't need concrete filename because is a file in memory
+    let source = driver.create(filename, size_x, size_y, bands).unwrap();
+    let destiny = driver.create(filename, size_x, size_y, bands).unwrap();
+
+    // x-coordinate of the top-left corner pixel (x-offset)
+    // width of a pixel (x-resolution)
+    // row rotation (typically zero)
+    // y-coordinate of the top-left corner pixel
+    // column rotation (typically zero)
+    // height of a pixel (y-resolution, typically negative)
+    let transform_source = [-180.0, 10.0, 0.0, 90.0, 0.0, -10.0];
+    let transform_destiny = [0.0, 1.0, 0.0, 0.0, 0.0, -1.0];
+
+    assert!(source.set_geo_transform(&transform_source).is_ok());
+    assert!(destiny.set_geo_transform(&transform_destiny).is_ok());
+    assert!(warp::reproject(&source, &destiny).is_ok());
+    assert_eq!(destiny.geo_transform().unwrap(), transform_destiny);
 }
